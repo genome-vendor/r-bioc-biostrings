@@ -1,0 +1,309 @@
+Some R problems that maybe worth reporting
+------------------------------------------
+
+- Loading a serialized XStringViews object without prior loading the Biostrings
+  package seems to have problems: the object loads, but, when I try to display
+  it, then nothing is printed and the prompt doesn't come back either (unless I
+  CTRL C).
+
+- rowSums() and colSums() should return integer vectors when applied on
+  an integer matrix.
+
+
+Immediate TODO list
+-------------------
+
+BASIC CONTAINERS
+
+- Improve the MIndex container. It needs to support storage of the nb of
+  mismatches for each hit. No need to store the locations of those mismatches
+  though: this would require a huge amount of memory and there are other ways
+  to retrieve these locations on user demand so maybe it's not worth it.
+
+- XStringSet objects:
+    o Modify the internals of the XStringSet containers to support efficient
+      replacement of elements (without reallocation and data copy). See long
+      comment at the beginning of R/XStringSet-class.R for the details.
+    o Support this: DNAStringSet(x, start=c(1,5), end=c(3,7)) when x is a
+      single string (character or XString). The result should be a DNAStringSet
+      object of the length of 'start' (or 'end').
+    o Fix validObject() for XStringSet objects (currently broken).
+    o DNAStringSet(x) should not do anything when x is already a DNAStringSet
+      _instance_ (class(x) == "DNAStringSet").
+    o Add methods for XStringSet objects everywhere there are methods defined
+      for XStringViews objects (matchPattern, countPattern, etc...).
+      Make them work in a vectorized fashion for XStringSet objects.
+    o Add "==" method for XStringSet objects.
+    o Try to speed up "show" method for XStringSet objects.
+
+- Define a DNAorRNA class (or NucleotideString) that is the union of the
+  DNAString and RNAString classes (use a union class for this or "do it by
+  hand" by defining this as a virtual class and by having the DNAString
+  and RNAString classes derived from it). Then use it to simplify code like:
+    setMethod("alphabetFrequency", "DNAString", ...)
+    setMethod("alphabetFrequency", "RNAString", ...)
+  These 2 methods can be replaced by a single method:
+    setMethod("alphabetFrequency", "NucleotideString", ...)
+  Also this:
+    if (is(x@subject, "DNAString") || is(x@subject, "RNAString")) ...
+  can be replaced by:
+    if (is(x@subject, "NucleotideString")) ...
+  Etc...
+
+C-LEVEL FACILITIES
+
+UTILITIES
+
+- Improve support for AAString/AAStringSet objects: (1) constructors need
+  to check the validity of the input letters, (2) alphabetFrequency() needs
+  to format its output in the same way it does on DNA input.
+
+- Replace current quick and dirty (and very inefficient) implementation of set
+  operations on XStringSet objects ("union", "intersect", "setdiff" and
+  "setequal") by something more efficient.
+
+- Move lcprefix()/lcsuffix() out of pmatchPattern.R to a file of their own.
+  (This stuff needs to belong to the UTILITIES component of the package, not
+  to the STRING ALIGNMENT component.)
+
+- Add "order", "sort", "duplicated", "unique" and "patternFrequency" methods
+  for XStringSet and XStringViews objects. Also, for completeness, the "<=",
+  ">=", "<" and ">" operators between XString objects should be provided.
+  Note that Martin's srsort() from the ShortRead package is much faster
+  than sortDNAString() from the old Biostrings 1 package:
+
+    library(drosophila2probe)
+    dict0 <- DNAString(drosophila2probe$sequence[1:100000])
+
+  On george1:
+
+    sortDNAString(dict0) # 1.053 sec. (R-2.7.1 + Biostrings 1.4.0)
+
+    srsort(dict0) # 0.097 sec. (R-2.8 + Biostrings 2.9 + ShortRead 0.1)
+
+  srsort() uses standard C qsort() internally.
+  It might be possible to be even faster by building a prefix tree (like
+  for the Aho-Corasick algo) but that will probably be at the cost of
+  using much more memory. Also it might be relatively easy do reuse the
+  current Aho-Corasick code for a DNAStringSet object but it will require
+  much more work to do this for a BStringSet or AAStringSet object.
+
+- Add an xsmatch() function that would behave like standard base::match()
+  but on XString objects (2nd arg 'table' must be an XStringSet object).
+  When 'x' is a single string, 'xsmatch(x, table)' would return:
+
+    ii <- nchar(x) == width(table) &
+          isMatchingAt(x, Biostrings:::super(table), start(table))
+    which(ii)[1]
+
+  although this is not optimal because isMatchingAt() is doing too many
+  comparisons when it could in fact bail out early.
+
+- Add a new generic that combines a subject and an IRanges (or IRanges-like)
+  object to return an XStringViews object. The IRanges-like object could be
+  MIndex object and the method for it would do as if it had received
+  unlist(MIndex). Currently my problem is that I can't come up with a good
+  name for such generic :-/ Maybe I could just use views(subject, x) for
+  this (dispatch would be on x, not subject). And the current views function
+  could be renamed (or maybe it's not needed at all, maybe a fancy
+  new("IRanges", ...) could replace it).
+
+STRING MATCHING
+
+- Revisit matchLRPatterns() semantic and improve its performance.
+  The current behaviour is to return *all* L/R match pairs that satisfy
+  the search criteria. This leads to poor performance, and, maybe more
+  importantly, it tends to return redundant match pairs (e.g. 2 match
+  pairs can overlap, or one can be within the limits of the other).
+  Maybe, by default, a better semantic would be one similar to what
+  matchProbePair() does, that is, only match pairs that don't contain
+  another match pair are returned (the assumption here is that those are
+  the most relevant match pairs). Also, should L/R match pairs where the
+  left and right matches overlap be accepted?
+
+- Add a Biostrings.Rnw vignette with a short overview of the string
+  matching/aligning capabilities and a "how to choose the right string
+  matching/aligning function" diagram.
+
+- Add a no.match.length argument to gregexpr2() that is FALSE by
+  default so gregexpr(pattern, text, fixed=TRUE) is more interchangeable
+  with gregexpr2(pattern, text) and use no.match.length=TRUE in matchPattern's
+  internal code.
+
+- When algo="auto", use "naive_inexact" instead of "shift-or" when max.mismatch
+  is high (e.g. >= 8, finding the exact cut-value requires some testing).
+  Correct Robert's RBioinf book reporting that the performance decrease
+  significantly when max.mismatch becomes to large. Should not be the case
+  anymore.
+
+- Add some convenience function (e.g. a wrapper to .valid.algos()) to let the
+  curious user know which algos are available/used for a given search problem.
+
+- Rework findPalindromes() (and findComplementedPalindromes()) so that they
+  return maximum palindromes only.
+
+- PDict()/matchPDict()/countPDict()/whichPDict():
+
+  o PDict(), matchPDict(): Support fuzzy matching with variable width
+    dictionaries.
+
+    The trick used internally that consists in splitting the patterns into N+1
+    Trusted Bands (where N is max.mismatch) could be restricted to a "not
+    really trusted band" specified by the user (not necessarily a prefix), and
+    then brute force could be used on the head and tail of this "not really
+    trusted band". The user would also need a way to specify 2 max.mismatch
+    values: one for the "not really trusted band" and one for the head/tail.
+
+    From a user point of view, it could look something like this:
+
+    # Right now the following is not allowed (you cannnot specify both
+    # 'max.mismatch' and 'tb.end'). Also the names of the
+    # tb.start/tb.end/tb.width args would need to change because it's
+    # not about the Trusted Band anymore (strictly speaking):
+    pdict <- PDict(dict, max.mismatch=2, tb.end=min(width(dict)))
+
+    # Then to allow up to 2 mismatches on the "not really trusted band"
+    # and up to 1 mismatch on the tail ('pdict' has no head):
+    mi <- matchPDict(pdict, subject, max.mismatch=c(2, 1))
+
+    The notion of Trusted Band as it is defined right now would not need
+    to be exposed anymore and would become an entirely internal thing.
+    From a user point of view it would be replaced by this more general kind
+    of constant-width band where a small number of mismatches is allowed.
+    I need a better name than "not really trusted band" for it.
+
+  o Document the "allow mismacthes anywhere in the patterns" feature (activated
+    via the 'max.mismatch' argument of PDict()).
+
+  o Support IUPAC ambiguity letters in the DNAStringSet object passed to
+    PDict().
+
+  o Harris suggestion: treat a max.mismatch value that is strictly between 0
+    and 1 like an error rate (so that the actual max number of mismatches
+    adjust to the length of each pattern).
+
+  o Patrick's suggestion: give the user the option to make matchPDict() return
+    directly the coverage of the hits (apparently a common use case). That
+    would avoid the overhead of storing the hits in the (generally big) MIndex
+    object first.
+    Maybe put this in a separate function e.g. coveragePDict().
+
+  o _match_tbACtree2() doesn't need to walk until the end of the subject: it
+    could stop when the number of remaining chars to read is < to the
+    difference between the depth of the AC tree (i.e. the width of the
+    Trusted Band) and the current depth. This should speed up matchPDict()
+    (and family) substantially when the length of the subject is very small.
+    A typical use case where this could be of great benefit is when finding
+    the neighbors of a given pattern with e.g.
+    whichPDict(pdict, pdict[[99]], max.mismatch=2).
+
+  o Implement the skip.invalid.patterns arg in PDict() (so the user can build
+    a PDict object from Solexa data that would contain Ns if he wants, reads
+    with an N would just be skipped).
+
+  o Implement "duplicated" and "patternFrequency" methods for PDict objects
+    with a head or a tail. Add 'as.prob' arg (default FALSE) to
+    patternFrequency() like for alphabetFrequency().
+
+  o extractAllMatches() fails on a very big MIndex object (can't allocate
+    vector of size 5.2Gb).
+
+  o C code improvement: no need to use temporary storage for 'dups_buf' and
+    'match_count' in match_pdict.c, store directly in the returned
+    INTEGER vector.
+
+  o MIndex objects: at some point the user will want to be able to combine
+    "compatible" MIndex objects. 2 MIndex objects are "compatible" if they
+    are describing 2 set of matches coming from the same original dict and on
+    the same target (subject). In practice, it will be enough that they have
+    the same index i.e. they have the same pids() or, if the pids() is NULL,
+    they have the same length.
+    Then methods like "union", "rangesect", "setdiff", "setequal", etc...
+    could be defined. The set operation would be performed between the 2
+    subsets of matches of each input pattern. Of course, 2 matches are
+    considered equal if their start/end are the same.
+
+  o Make reverseComplement() work on a PDict object.
+
+  o Compare with other software for fast alignment and assembly:
+      Vmatch (http://www.vmatch.de/)
+      Maq (http://maq.sourceforge.net/)
+      MUMmer (http://mummer.sourceforge.net/)
+
+STRING ALIGNMENT
+
+MISCELLANEOUS
+
+- Port DNASuffixArray() and related functions from Biostrings 1.
+
+- Robert wants the dependencies to be reduced to 1 BSgenome pkg only (not 2),
+  or, even better, to 0 BSgenome pkg. The examples would then use a single
+  sequence stored in the data folder.
+
+- Remove the Biostrings 1 subdir. But first compare NAMESPACE + list of aliases
+  in Rd files from Biostrings 1 and 2 make sure no important feature has been
+  lost.
+
+- Update the CHANGES file.
+
+
+2.21 series (BioC 2.9)
+----------------------
+
+- Deprecate old matchprobes functions: matchprobes(), longestConsecutive().
+
+
+Long term TODO list
+-------------------
+
+- Look at apse.c in R/src/main for Levenshtein. It's coming from
+    http://search.cpan.org/dist/String-Approx/
+  and is what Perl and Python are using.
+  It should stop and return an error code after some max.distance has been
+  reached. We definitely want to be able to do this if we're going to use it
+  on the millions of elements of the head and tail of a TB_PDict object.
+
+- Maybe: add a specific containers for results returned by matchPattern
+  (and family). Would derive from the XStringViews class with at least one
+  additional slot, the @call slot (of type "language"), that would contain
+  the value of match.call(), so that one knows what parameters were supplied
+  for a given matching task.
+
+- readFASTA(): remove warning when strip.descs is missing.
+
+- Merge ~rgentlem/tmp/EMBOSS-3.0.0/emboss/matcher.c (Huang & Miller
+  alignment algo) into Biostrings.
+
+- An old Robert request: "have a look at GeneR, and see if there are
+  any other packages that do sequence matching, and describe, in one page or
+  so, what the differences are between the packages (also some notion of speed
+  and size, how well do they work on different inputs)".
+
+- Extend pairwiseAlignment to return the set of maximum alignments, rather
+  than just one element from that set.
+
+- Why doesn't sapply or lapply work for an XStringViews object (it didn't
+  work either for BioString objects). Isn't it enough that these objects
+  are subsettable?
+
+- Restore the test units.
+
+- Fix pb with length(x) <- 2 screwing up x if it's an XString or XStringViews
+  object (prevent people of doing this by defining the replacement version
+  of the length method and issuing an error).
+
+- Still have to think about it (Robert suggestion): make [[ work on "out
+  of limits" views with a warning (we keep issuing an error only when the
+  view is all blank).
+
+- Start adding suffix tree capabilities: maybe merge SuffixTree package from
+  Robert?
+
+
+
+Unsorted incoming TODO items
+----------------------------
+
+- Unify the way to get strings length (strlen() in R, length or width
+   with Biostrings data structures. -Laurent
+

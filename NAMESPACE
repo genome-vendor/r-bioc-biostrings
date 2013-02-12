@@ -1,0 +1,445 @@
+useDynLib(Biostrings)
+
+import(methods)
+
+importFrom(graphics,
+    axis, legend, lines, par, plot.new,
+    plot.window, title
+)
+
+importFrom(stats,
+    chisq.test, complete.cases, diffinv,
+    pchisq
+)
+
+importFrom(utils,
+    data
+)
+
+import(BiocGenerics)
+
+import(IRanges)
+
+
+### ==========================================================================
+### BASIC CONTAINERS
+### --------------------------------------------------------------------------
+###   IUPAC_CODE_MAP.R
+###   AMINO_ACID_CODE.R
+###   GENETIC_CODE.R
+###   XStringCodec-class.R
+###   seqtype.R
+###   XString-class.R
+###   XStringSet-class.R
+###   XStringSet-comparison.R
+###   XStringViews-class.R
+###   MaskedXString-class.R
+###   XStringSetList-class.R
+###   XKeySortedData-class.R
+###   XKeySortedDataList-class.R
+###   xscat.R
+
+exportClasses(
+    XString, BString, DNAString, RNAString, AAString,
+    XStringSet, BStringSet, DNAStringSet, RNAStringSet, AAStringSet,
+    XStringViews,
+    MaskedXString, MaskedBString, MaskedDNAString, MaskedRNAString, MaskedAAString,
+    XStringSetList, BStringSetList, DNAStringSetList, RNAStringSetList, AAStringSetList,
+    XKeySortedData, BKeySortedData, DNAKeySortedData,
+    RNAKeySortedData, AAKeySortedData,
+    XKeySortedDataList, BKeySortedDataList, DNAKeySortedDataList,
+    RNAKeySortedDataList, AAKeySortedDataList
+)
+
+export(
+    ## IUPAC_CODE_MAP.R + AMINO_ACID_CODE.R + GENETIC_CODE.R:
+    IUPAC_CODE_MAP, mergeIUPACLetters,
+    AMINO_ACID_CODE, GENETIC_CODE,
+    RNA_GENETIC_CODE,
+
+    ## XStringCodec-class.R:
+    DNA_BASES, RNA_BASES, DNA_ALPHABET, RNA_ALPHABET, AA_ALPHABET,
+
+    ## seqtype.R:
+    seqtype, "seqtype<-", get_seqtype_conversion_lookup, alphabet,
+
+    ## XString-class.R:
+    BString, DNAString, RNAString, AAString,
+
+    ## XStringSet-class.R:
+    BStringSet, DNAStringSet, RNAStringSet, AAStringSet,
+
+    ## MaskedXString-class.R:
+    unmasked,
+
+    ## XStringSetList-class.R:
+    partitioning, DNAStringSetList,
+
+    ## XKeySortedData-class.R:
+    BKeySortedData, DNAKeySortedData, RNAKeySortedData,
+    AAKeySortedData, dataKey, dataTable,
+
+    ## XKeySortedDataList-class.R:
+    BKeySortedDataList, DNAKeySortedDataList, RNAKeySortedDataList,
+    AAKeySortedDataList,
+
+    ## xscat.R:
+    xscat
+)
+
+exportMethods(
+    length,
+    nchar, width,
+    seqtype, "seqtype<-",
+    updateObject,
+    names, "names<-", "[", "[[", rep, append,
+    show,
+    splitAsListReturnedClass,
+    union, intersect, setdiff, setequal,
+    "%in%", match,
+    compare, "==", "!=", match,
+    coerce, as.character, unlist, as.matrix, as.list, toString, toComplex,
+    narrow, subseq, threebands, "subseq<-", collapse, gaps,
+    Views,
+    unmasked, maskedwidth, maskedratio, masks, "masks<-",
+    partitioning
+)
+
+
+### ==========================================================================
+### UTILITIES
+### --------------------------------------------------------------------------
+###   FASTA-io-legacy.R
+###   XStringSet-io.R
+###   letter.R
+###   getSeq.R
+###   letterFrequency.R
+###   dinucleotideFrequencyTest.R
+###   chartr.R
+###   reverse.R
+###   translate.R
+###   toComplex.R
+###   replaceLetterAt.R
+###   injectHardMask.R
+###   misc.R
+
+export(
+    ## FASTA-io-legacy.R:
+    readFASTA, writeFASTA,
+
+    ## XStringSet-io.R:
+    readBStringSet, readDNAStringSet, readRNAStringSet, readAAStringSet,
+    fasta.info, fastq.geometry,
+    writeXStringSet,
+    saveXStringSet,
+
+    ## letter.R:
+    letter,
+
+    ## getSeq.R:
+    getSeq,
+
+    ## letterFrequency.R:
+    letterFrequency,
+    letterFrequencyInSlidingView,
+    alphabetFrequency, hasOnlyBaseLetters, uniqueLetters,
+    consensusMatrix, consensusString,
+    mkAllStrings,
+    oligonucleotideFrequency,
+    dinucleotideFrequency, trinucleotideFrequency,
+    nucleotideFrequencyAt,
+    oligonucleotideTransitions,
+
+    ## dinucleotideFrequencyTest.R
+    dinucleotideFrequencyTest,
+
+    ## reverse.R:
+    complement, reverseComplement,
+
+    ## translate.R:
+    transcribe, cDNA, dna2rna, rna2dna,
+    codons, translate,
+
+    ## toComplex.R:
+    toComplex,
+
+    ## replaceLetterAt.R:
+    replaceLetterAt, .inplaceReplaceLetterAt,
+
+    ## injectHardMask.R:
+    injectHardMask,
+
+    ## misc.R:
+    N50,
+
+    ## Old stuff (Defunct or Deprecated):
+    read.BStringSet, read.DNAStringSet, read.RNAStringSet, read.AAStringSet,
+    write.XStringSet,
+    save.XStringSet
+)
+
+exportMethods(
+    length, names, "[", "[[", rep,
+    show,
+    "==", "!=", duplicated, is.unsorted, order, sort, rank,
+    coerce, as.character, as.matrix, as.list, toString, toComplex,
+    letter,
+    substr, substring,
+    letterFrequency,
+    letterFrequencyInSlidingView,
+    alphabetFrequency, hasOnlyBaseLetters, uniqueLetters,
+    consensusMatrix, consensusString,
+    oligonucleotideFrequency,
+    nucleotideFrequencyAt,
+    dinucleotideFrequencyTest,
+    chartr,
+    reverse, complement, reverseComplement,
+    codons, translate,
+    replaceLetterAt,
+    maskMotif,
+    injectHardMask
+)
+
+
+### ==========================================================================
+### STRING MATCHING
+### --------------------------------------------------------------------------
+###   SparseList-class.R
+###   MIndex-class.R
+###   lowlevel-matching.R
+###   match-utils.R
+###   matchPattern.R
+###   matchPattern.BOC.R
+###   matchPattern.BOC2.R
+###   matchLRPatterns.R
+###   trimLRPatterns.R
+###   matchProbePair.R
+###   matchPWM.R
+###   findPalindromes.R
+###   PDict-class.R
+###   matchPDict.R
+
+exportClasses(
+    #SparseList,
+    MIndex, ByPos_MIndex,
+    BOC_SubjectString, BOC2_SubjectString,
+    PreprocessedTB, Twobit, ACtree2,
+    PDict3Parts,
+    PDict, TB_PDict, MTB_PDict, Expanded_TB_PDict
+)
+
+export(
+    ## MIndex-class.R
+    width0, startIndex, endIndex, countIndex,
+    extractAllMatches,
+
+    ## lowlevel-matching.R
+    neditStartingAt, neditEndingAt, neditAt,
+    isMatchingStartingAt, isMatchingEndingAt, isMatchingAt,
+    which.isMatchingStartingAt, which.isMatchingEndingAt, which.isMatchingAt,
+    hasLetterAt,
+
+    ## match-utils.R
+    mismatch, nmatch, nmismatch,
+
+    ## matchPattern.R
+    gregexpr2, matchPattern, countPattern, vmatchPattern, vcountPattern,
+
+    ## maskMotif.R
+    maskMotif, mask,
+
+    ## matchLRPatterns.R
+    matchLRPatterns,
+
+    ## trimLRPatterns.R
+    trimLRPatterns,
+
+    ## matchProbePair.R
+    matchProbePair,
+
+    ## matchPWM.R
+    maxWeights, minWeights, maxScore, minScore, unitScale,
+    PWM, PWMscoreStartingAt, matchPWM, countPWM,
+
+    ## findPalindromes.R
+    findPalindromes, findComplementedPalindromes,
+    palindromeArmLength, complementedPalindromeArmLength,
+    palindromeLeftArm, complementedPalindromeLeftArm,
+    palindromeRightArm, complementedPalindromeRightArm,
+
+    ## PDict-class.R + matchPDict.R
+    tb, tb.width, nnodes, hasAllFlinks, computeAllFlinks,
+    patternFrequency, PDict,
+    matchPDict, countPDict, whichPDict,
+    vmatchPDict, vcountPDict, vwhichPDict
+)
+
+exportMethods(
+    initialize,
+    length, names, "names<-", show, "[[",
+    startIndex, endIndex, countIndex, unlist,
+    neditStartingAt, neditEndingAt,
+    isMatchingStartingAt, isMatchingEndingAt,
+    mismatch, nmatch, nmismatch,
+    coverage,
+    matchPattern, countPattern, vcountPattern,
+    matchLRPatterns, trimLRPatterns,
+    matchProbePair,
+    maxWeights, minWeights, maxScore, minScore,
+    PWM, matchPWM, countPWM,
+    findPalindromes, findComplementedPalindromes,
+    palindromeArmLength, complementedPalindromeArmLength,
+    palindromeLeftArm, complementedPalindromeLeftArm,
+    palindromeRightArm, complementedPalindromeRightArm,
+
+    tb, tb.width, nnodes, hasAllFlinks, computeAllFlinks,
+    head, tail,
+    patternFrequency, PDict,
+    matchPDict, countPDict, whichPDict,
+    vmatchPDict, vcountPDict, vwhichPDict
+)
+
+
+### ==========================================================================
+### STRING ALIGNMENT
+### --------------------------------------------------------------------------
+###   XStringPartialMatches-class.R
+###   XStringQuality-class.R
+###   QualityScaledXStringSet.R
+###   InDel-class.R
+###   AlignedXStringSet-class.R
+###   PairwiseAlignments-class.R
+###   PairwiseAlignmentsSingleSubject-class.R
+###   PairwiseAlignments-io.R
+###   align-utils.R
+###   pmatchPattern.R
+###   pairwiseAlignment.R
+###   stringDist.R
+###   needwunsQS.R
+###   MultipleAlignment.R
+
+exportClasses(
+    XStringPartialMatches,
+    XStringQuality, PhredQuality, SolexaQuality, IlluminaQuality,
+    QualityScaledXStringSet,
+    QualityScaledBStringSet, QualityScaledDNAStringSet,
+    QualityScaledRNAStringSet, QualityScaledAAStringSet,
+    InDel,
+    AlignedXStringSet0, AlignedXStringSet, QualityAlignedXStringSet,
+    PairwiseAlignments, PairwiseAlignedXStringSet,
+    PairwiseAlignmentsSingleSubject, PairwiseAlignedFixedSubject,
+    PairwiseAlignmentsSingleSubjectSummary, PairwiseAlignedFixedSubjectSummary,
+    MultipleAlignment,
+    DNAMultipleAlignment, RNAMultipleAlignment, AAMultipleAlignment
+)
+
+export(
+    ## XStringPartialMatches-class.R:
+    subpatterns, pattern,
+
+    ## XStringQuality-class.R:
+    PhredQuality, SolexaQuality, IlluminaQuality,
+
+    ## QualityScaledXStringSet.R:
+    quality,
+    QualityScaledBStringSet, QualityScaledDNAStringSet,
+    QualityScaledRNAStringSet, QualityScaledAAStringSet,
+
+    ## InDel-class.R:
+    insertion, deletion,
+
+    ## AlignedXStringSet-class.R:
+    unaligned, aligned, indel, nindel,
+
+    ## PairwiseAlignments-class.R:
+    PairwiseAlignments, type, pid,
+
+    ## PairwiseAlignmentsSingleSubject-class.R:
+    PairwiseAlignmentsSingleSubject,
+
+    ## PairwiseAlignments-io.R:
+    writePairwiseAlignments,
+
+    ## align-utils.R:
+    nedit,
+    mismatchTable, mismatchSummary,
+    compareStrings,
+
+    ## pmatchPattern.R:
+    lcprefix, lcsuffix, pmatchPattern, lcsubstr,
+
+    ## pairwiseAlignment.R:
+    nucleotideSubstitutionMatrix,
+    errorSubstitutionMatrices,
+    qualitySubstitutionMatrices,
+    pairwiseAlignment,
+
+    ## stringDist.R:
+    stringDist,
+
+    ## MultipleAlignment.R:
+    DNAMultipleAlignment,
+    RNAMultipleAlignment,
+    AAMultipleAlignment,
+    rowmask, "rowmask<-",
+    colmask, "colmask<-",
+    maskGaps,
+    maskednrow, maskedncol, maskeddim,
+    readDNAMultipleAlignment,
+    readRNAMultipleAlignment,
+    readAAMultipleAlignment,
+    consensusViews,
+    write.phylip,
+    detail,
+
+    ## Old stuff (Defunct or Deprecated):
+    PairwiseAlignedXStringSet, PairwiseAlignedFixedSubject,
+    needwunsQS,
+    read.DNAMultipleAlignment,
+    read.RNAMultipleAlignment,
+    read.AAMultipleAlignment
+)
+
+exportMethods(
+    length, "[", rep,
+    coerce, as.integer, as.numeric, as.character, as.matrix, toString,
+    show, summary,
+    start, end, width,
+    Views,
+    subpatterns, pattern,
+    quality,
+    insertion, deletion,
+    unaligned, aligned, indel, nindel,
+    type, score, pid,
+    PairwiseAlignments, PairwiseAlignmentsSingleSubject,
+    mismatch, nmatch, nmismatch, nedit,
+    mismatchTable, mismatchSummary, coverage,
+    compareStrings,
+    lcprefix, lcsuffix, pmatchPattern, lcsubstr,
+    pairwiseAlignment, stringDist,
+    nchar, names, "names<-", "[[", narrow,
+    consensusMatrix, consensusString,
+    alphabetFrequency, as.list,
+
+    rowmask, "rowmask<-",
+    colmask, "colmask<-",
+    maskGaps,
+    maskednrow, maskedncol, maskeddim,
+    consensusViews,
+
+    ## Old stuff (Defunct or Deprecated):
+    needwunsQS
+)
+
+
+### ==========================================================================
+### STUFF THAT BELONGED ORIGINALLY TO OLD matchprobes PACKAGE AND IS NOW
+### SUPERSEDED BY SOME NATIVE Biostrings FUNCTIONALITY
+### --------------------------------------------------------------------------
+###   matchprobes.R
+
+export(
+    longestConsecutive,
+    matchprobes
+)
+

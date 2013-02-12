@@ -1,0 +1,109 @@
+CHANGES SINCE Biostrings 1 (v 1.4.z)
+
+o The following bugs and design flaws found in Biostrings 1 have been
+  addressed:
+
+  a) matchDNAPattern() was broken in many ways:
+
+     - The "offset problem":
+         > d <- DNAString(c("AA","TTT"))
+         > m <- matchDNAPattern("TT", d[2])
+       was returning wrong matches.
+       This problem was in fact the consequence of a flaw in the design
+       of the BioString class and was the first motivation for reworking
+       the core Biostrings classes that are the fundations of Biostrings 2
+       (see the Biostrings2Classes vignette for an introduction to these new
+       classes).
+
+     - The "negative offset problem":
+         > matchDNAPattern("AAA", "ACT", mismatch=2)
+       was displaying a first empty match.
+
+     - Problems with the "inexact matching" feature:
+         Pb1: Inexact matching (mismatch != 0) was almost always returning a
+         wrong result because of a bug in the implementation of the "shift-or"
+         algorithm.
+         Pb2: Only mismatch <= 3 was supported (now it's illimited even if
+         it doesn't make sense to use mismatch >= length(subject)).
+         Pb3: Some "of limits matches" (i.e. matches starting before the first
+         letter of the subject or ending after its last letter) could be
+         missing. And when they were found, the show() method was in general
+         not able to display them properly.
+
+     - This was provoking a bus-error bug on Solaris 2.9 and Mac OS X:
+         > pattern <- DNAString("AAAA")
+         > subject <- DNAString("AAAAC")
+         > matchDNAPattern(pattern, subject, mis=2)
+
+  b) Time of 'DNAString(src)' was quadratic in respect to 'length(src)' ('src'
+     being a character vector). In Biostrings 2 this has been replaced by
+     'DNAStringSet(src)' which is much faster (linear in time).
+
+o Other bugs in Biostrings 1:
+
+  - The Boyer-Moore algorithm was reported to be broken by Martin:
+      > d <- DNAString("GACTGGTAAAAGTCGGCCGAGGAC")
+      > matchDNAPattern("AA", d, algorithm="boyer-moore")
+          Object of class BioString with
+      Pattern alphabet: -TGCANBDHKMRSVWY
+      Values:
+      [1] AC
+      [2] TA
+      [3] AA
+      [4] AA
+      [5] AA
+      [6] AG
+      [7] GA
+    The algorithm has not yet been ported to Biostrings 2 (but will be ASAP).
+
+  - alphabetFrequency(x) was broken when x had "out of limits" offsets:
+      > m <- matchDNAPattern("AAA", "ACT", mismatch=2)
+      > alphabetFrequency(m)
+      Error in alphabetFrequency(m) : found pattern (0) not in mapping
+    (This still doesn't work in Biostrings 2, see TODO file.)
+
+o Changes in the API:
+  - No more BioString class: it has been replaced by the BString, DNAString,
+    RNAString, AAString, BStringSet, DNAStringSet, RNAStringSet, AAStringSet
+    and XStringViews classes.
+  - A BString object can be used to store a plain string and a DNAString
+    (or RNAString) object can be used to store a DNA (or RNA) sequence.
+  - No more NucleotideString() method: use the BString(), DNAString(),
+    or RNAString() constructors instead.
+  - The DNAString() constructor is _not_ vectorized anymore. You need to use
+    the new DNAStringSet() constructor when the input is a character vector
+    of length > 1.
+  - New constructors BString() and RNAString() follow the DNAString() new
+    behavior: they are _not_ vectorized.
+  - The as.list() method for XStringViews objects. This allows constructions
+    like 'for (b in as.list(v)) ...' and 'lapply(as.list(v), ...)'.
+  - New generics: subBString(), subject(), start(), end(), width(), desc(),
+    XStringViews(), reverse(), complement(), countPattern() and mismatch().
+  - New functions: letter(), BString(), RNAString(), views(), adjacentViews().
+  - Renamed functions: matchDNAPattern() has been replaced by matchPattern().
+  - Deprecated functions: matchDNAPattern().
+
+o New features:
+  - A new format for displaying BString, BStringSet or XStringViews objects.
+  - New [, == and != operators for BString objects.
+  - New [[, == and != operators for XStringViews objects.
+  - XStringViews() (the replacement for the vectorized DNAString() found in
+    Biostrings 1) has a 'sep' argument).
+  - reverseComplement() has been splitted in 2 separate functions reverse()
+    and complement(). 'reverseComplement(x)' is now a shortcut for
+    'reverse(complement(x))'.
+  - matchPattern() has a 'fixed' argument.
+  - See man pages for all new generics and functions listed in previous
+    section for all the details.
+
+o Changes in the semantic:
+  - reverse() and reverseComplement() don't reverse the order of the views.
+
+o A few minor features have been temporarly removed (no listing provided).
+
+o Documentation:
+  - The biostDemo.Rnw vignette has been replaced by 2 vignettes:
+    matchPattern.Rnw and Alignments.Rnw
+  - 2 new vignettes (work in progress): Biostrings2Classes.Rnw and
+    DNAStringVectorization.Rnw.
+
