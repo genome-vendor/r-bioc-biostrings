@@ -1,14 +1,14 @@
-Source: r-cran-biostrings
+Source: r-bioc-biostrings
 Section: gnu-r
 Priority: optional
 Maintainer: The Genome Institute <gmt@genome.wustl.edu>
-Build-Depends: r-base-dev, r-base-core, debhelper (>> 4.1.0), r-cran-biocgenerics (>= 0.1.2), r-cran-iranges (>= 1.15.37)
+Build-Depends: r-base-dev, r-base-core, debhelper (>> 4.1.0), r-bioc-biocgenerics (>= 0.1.2), r-bioc-iranges (>= 1.15.37)
 Homepage: http://www.bioconductor.org/packages/2.11/bioc/html/Biostrings.html
 
-Package: r-cran-biostrings
+Package: r-bioc-biostrings
 Architecture: all
 Maintainer: Bioconductor Package Maintainer <maintainer@bioconductor.org>
 Description: Memory efficient string containers, string matching algorithms, and other utilities, for fast manipulation of large biological sequences or sets of sequences.
 License: Artistic2.0
-Depends: r-base-core
+Depends: r-base-core, r-bioc-biocgenerics (>= 0.1.2), r-bioc-iranges (>= 1.15.37)
 
