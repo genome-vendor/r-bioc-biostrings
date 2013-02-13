@@ -6,7 +6,7 @@ Build-Depends: r-base-dev, r-base-core, debhelper (>> 4.1.0), r-bioc-biocgeneric
 Homepage: http://www.bioconductor.org/packages/2.11/bioc/html/Biostrings.html
 
 Package: r-bioc-biostrings
-Architecture: all
+Architecture: amd64
 Maintainer: Bioconductor Package Maintainer <maintainer@bioconductor.org>
 Description: Memory efficient string containers, string matching algorithms, and other utilities, for fast manipulation of large biological sequences or sets of sequences.
 License: Artistic2.0
